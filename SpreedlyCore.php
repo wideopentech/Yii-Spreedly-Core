@@ -139,7 +139,7 @@ XML;
         return $reply;
     }
 
-    private function executeCurl($url, $action, $xmlData = "")
+    protected function executeCurl($url, $action, $xmlData = "")
     {
 
         $ch = curl_init($url);
@@ -178,7 +178,7 @@ XML;
     /**
      * Extracts header fields from the response.
      */
-    private function extractHeader($xml)
+    protected function extractHeader($xml)
     {
 
         $reply['transaction_type'] = (string)$xml->transaction_type;
@@ -201,7 +201,7 @@ XML;
     /**
      * Extracts fields from the "response" element.
      */
-    private function extractResponse($xml)
+    protected function extractResponse($xml)
     {
 
         $reply['response']['success'] = ((string)$xml->response->success == 'true') ? 1 : 0;
@@ -218,7 +218,7 @@ XML;
     /**
      * Extracts fields from the "paymentMethod" element.
      */
-    private function extractPaymentMethod($xml)
+    protected function extractPaymentMethod($xml)
     {
 
         $paymentMethod['payment_method']['token'] = (string)$xml->payment_method->token;
