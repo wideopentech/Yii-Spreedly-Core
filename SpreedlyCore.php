@@ -1,48 +1,51 @@
 <?php
 
 /**
-* Yii extension SpreedlyCore
-*
-* This is a base class for processing Spreedly Core API requests.
-*
-* @author Gary Solomon <gary@wideopentech.com>
-* @version 0.1      
-* @creation date: 15-12-2010
-* @filesource SpreedlyCore.php
-*
-* 1. You have to download and upload files to /protected/extensions/spreedly/.
-* 2. Include extension in config/main.php
-*
-*/
-class SpreedlyCore extends CApplicationComponent {
+ * Yii extension SpreedlyCore
+ *
+ * This is a base class for processing Spreedly Core API requests.
+ *
+ * @author Gary Solomon <gary@wideopentech.com>
+ * @version 0.1
+ * @creation date: 15-12-2010
+ * @filesource SpreedlyCore.php
+ *
+ * 1. You have to download and upload files to /protected/extensions/spreedly/.
+ * 2. Include extension in config/main.php
+ *
+ */
+class SpreedlyCore extends CApplicationComponent
+{
 
     public $apiLogin;
     public $apiSecret;
     public $gatewayToken;
 
-    const METHOD_GET = 'GET';    
+    const METHOD_GET = 'GET';
     const METHOD_PUT = 'PUT';
     const METHOD_POST = 'POST';
 
     /**
      * Initialize the extension
      */
-    public function init() {
-    
-        if( !function_exists('curl_init') )
-          throw new CException( Yii::t('Curl', 'You must have CURL enabled in order to use this extension.') );                  
+    public function init()
+    {
+
+        if (!function_exists('curl_init'))
+            throw new CException(Yii::t('Curl', 'You must have CURL enabled in order to use this extension.'));
     }
-    
+
     /**
-     * Send the charge to Core for processing.   
+     * Send the charge to Core for processing.
      */
-    public function purchase($paymentToken, $amount, $orderId="", $ipAddress="") {
+    public function purchase($paymentToken, $amount, $orderId = "", $ipAddress = "")
+    {
 
         $url = 'https://spreedlycore.com/v1/gateways/' . $this->gatewayToken . '/purchase.xml';
         $spreedlyAmount = $amount * 100;
-		$xmlIn = 
-<<<XML
-<transaction>
+        $xmlIn =
+ <<<XML
+ <transaction>
     <transaction_type>purchase</transaction_type>
     <payment_method_token>$paymentToken</payment_method_token>
     <amount>$spreedlyAmount</amount>
@@ -52,114 +55,119 @@ class SpreedlyCore extends CApplicationComponent {
 </transaction>
 XML;
 
-   		$replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_POST, $xmlIn);
-		$reply = array_merge(
-			$this->extractHeader($replyXml),
-			$this->extractResponse($replyXml),
-			$this->extractPaymentMethod($replyXml)
-		);			
-				
+        $replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_POST, $xmlIn);
+        $reply = array_merge(
+            $this->extractHeader($replyXml),
+            $this->extractResponse($replyXml),
+            $this->extractPaymentMethod($replyXml)
+        );
+
         return $reply;
     }
-    
-    /** Sends a credit to Core for processing.   
+
+    /** Sends a credit to Core for processing.
      */
-    public function credit($transactionToken, $amount, $ipAddress) {
+    public function credit($transactionToken, $amount, $ipAddress)
+    {
 
         $url = 'https://spreedlycore.com/v1/transactions/' . $transactionToken . '/credit.xml';
         $spreedlyAmount = $amount * 100;
-		$xmlIn = 
+        $xmlIn =
 <<<XML
 <transaction>
     <amount>$spreedlyAmount</amount>
 </transaction>
 XML;
 
-   		$replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_POST, $xmlIn);
+        $replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_POST, $xmlIn);
 
-		$reply = array_merge(
-			$this->extractHeader($replyXml),
-			$this->extractResponse($replyXml),
-			$this->extractPaymentMethod($replyXml)
-		);			
+        $reply = array_merge(
+            $this->extractHeader($replyXml),
+            $this->extractResponse($replyXml),
+            $this->extractPaymentMethod($replyXml)
+        );
         return $reply;
-    } 
-    
+    }
+
     /**
      * Retains the given token in Core.
      */
-    public function retainPaymentMethod($paymentToken) {
-    
-   		$url = 'https://spreedlycore.com/v1/payment_methods/' . $paymentToken . '/retain.xml';
-   		
-   		$replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_PUT);
-   		
-		$reply = array_merge(
-			$this->extractHeader($replyXml),
-			$this->extractPaymentMethod($replyXml)
-		);			
+    public function retainPaymentMethod($paymentToken)
+    {
+
+        $url = 'https://spreedlycore.com/v1/payment_methods/' . $paymentToken . '/retain.xml';
+
+        $replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_PUT);
+
+        $reply = array_merge(
+            $this->extractHeader($replyXml),
+            $this->extractPaymentMethod($replyXml)
+        );
         return $reply;
     }
-    
+
     /**
      * Redacts the given token in Core.
      */
-    public function redactPaymentMethod($paymentToken) {
-    
-   		$url = 'https://spreedlycore.com/v1/payment_methods/' . $paymentToken . '/redact.xml';
-   		
-   		$replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_PUT);
-   		
-		$reply = array_merge(
-			$this->extractHeader($replyXml),
-			$this->extractPaymentMethod($replyXml)
-		);			
+    public function redactPaymentMethod($paymentToken)
+    {
+
+        $url = 'https://spreedlycore.com/v1/payment_methods/' . $paymentToken . '/redact.xml';
+
+        $replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_PUT);
+
+        $reply = array_merge(
+            $this->extractHeader($replyXml),
+            $this->extractPaymentMethod($replyXml)
+        );
         return $reply;
-    }    
-    
+    }
+
     /**
      * Retrieves the given payment method from Core.
      */
-    public function retrievePaymentMethod($paymentToken) {
-     
-       	$url = 'https://spreedlycore.com/v1/payment_methods/' . $paymentToken . '.xml';
-   		
-   		$replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_GET);
-		$reply = array_merge(
-			$this->extractPaymentMethod($replyXml)
-		);			
+    public function retrievePaymentMethod($paymentToken)
+    {
 
-        return $reply; 
+        $url = 'https://spreedlycore.com/v1/payment_methods/' . $paymentToken . '.xml';
+
+        $replyXml = $this->executeCurl($url, SpreedlyCore::METHOD_GET);
+        $reply = array_merge(
+            $this->extractPaymentMethod($replyXml)
+        );
+
+        return $reply;
     }
-    
-    private function executeCurl($url, $action, $xmlData = "") {
+
+    private function executeCurl($url, $action, $xmlData = "")
+    {
 
         $ch = curl_init($url);
-               
+
         curl_setopt($ch, CURLOPT_USERPWD, $this->apiLogin . ':' . $this->apiSecret);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-type: application/xml'));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, false);             
-	
-		if ($action == SpreedlyCore::METHOD_POST) {
-		
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlData); 
-		}
-		else if ($action == SpreedlyCore::METHOD_PUT) {
+        curl_setopt($ch, CURLOPT_HEADER, false);
 
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-			curl_setopt($ch, CURLOPT_POSTFIELDS, '');
-		}
+        if ($action == SpreedlyCore::METHOD_POST) {
+
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlData);
+        }
+        else if ($action == SpreedlyCore::METHOD_PUT) {
+
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($ch, CURLOPT_POSTFIELDS, '');
+        }
         $xmlstr = curl_exec($ch);
         curl_close($ch);
 
         // GET API calls aren't wrapped in an XML transaction, but we're going to force
         // it for consistency in parsing the XML.
-		if ($action == SpreedlyCore::METHOD_GET) {
-		
-			$xmlstr = "<transaction>".$xmlstr."</transaction>";
-		}
+        if ($action == SpreedlyCore::METHOD_GET) {
+
+            $xmlstr = "<transaction>" . $xmlstr . "</transaction>";
+        }
 
         // Extract the values from the response XML
         $xml = new SimpleXMLElement(trim($xmlstr));
@@ -167,49 +175,52 @@ XML;
     }
 
 
-	/**
-	 * Extracts header fields from the response.
-	 */    
-    private function extractHeader($xml) {
+    /**
+     * Extracts header fields from the response.
+     */
+    private function extractHeader($xml)
+    {
 
         $reply['transaction_type'] = (string)$xml->transaction_type;
         $reply['token'] = (string)$xml->token;
 
-    	if (!empty($xml->error)) {
-		       
-			$reply['succeeded'] = 0;		
-			$reply['message'] = (string)$xml->error;
-		}
-		else {
-		
-		    $reply['succeeded'] = ((string)$xml->succeeded == 'true') ? 1 : 0;    
-		    $reply['message'] = (string)$xml->message;	 		
-		}
-		
-		return $reply;
+        if (!empty($xml->error)) {
+
+            $reply['succeeded'] = 0;
+            $reply['message'] = (string)$xml->error;
+        }
+        else {
+
+            $reply['succeeded'] = ((string)$xml->succeeded == 'true') ? 1 : 0;
+            $reply['message'] = (string)$xml->message;
+        }
+
+        return $reply;
     }
-    
+
     /**
      * Extracts fields from the "response" element.
      */
-    private function extractResponse($xml) {
+    private function extractResponse($xml)
+    {
 
-	    $reply['response']['success'] = ((string)$xml->response->success == 'true') ? 1 : 0;    
-	    $reply['response']['message'] = (string)$xml->response->message;	    
-	    $reply['response']['error_code'] = (string)$xml->response->error_code;
-	   	$reply['response']['avs_code'] = (string)$xml->response->avs_code;
-	   	$reply['response']['avs_message'] = (string)$xml->response->avs_message;
-	   	$reply['response']['cvv_code'] = (string)$xml->response->cvv_code;
-	    $reply['response']['cvv_message'] = (string)$xml->response->cvv_message;	
+        $reply['response']['success'] = ((string)$xml->response->success == 'true') ? 1 : 0;
+        $reply['response']['message'] = (string)$xml->response->message;
+        $reply['response']['error_code'] = (string)$xml->response->error_code;
+        $reply['response']['avs_code'] = (string)$xml->response->avs_code;
+        $reply['response']['avs_message'] = (string)$xml->response->avs_message;
+        $reply['response']['cvv_code'] = (string)$xml->response->cvv_code;
+        $reply['response']['cvv_message'] = (string)$xml->response->cvv_message;
 
-	    return $reply;
+        return $reply;
     }
-    
+
     /**
      * Extracts fields from the "paymentMethod" element.
      */
-    private function extractPaymentMethod($xml) {
-    
+    private function extractPaymentMethod($xml)
+    {
+
         $paymentMethod['payment_method']['token'] = (string)$xml->payment_method->token;
         $paymentMethod['payment_method']['card_type'] = (string)$xml->payment_method->card_type;
         $paymentMethod['payment_method']['card_number'] = (string)$xml->payment_method->number;
@@ -220,7 +231,7 @@ XML;
         $errors = array();
         if ($xml->payment_method->errors) {
 
-            foreach($xml->payment_method->errors->error AS $errorXml) {
+            foreach ($xml->payment_method->errors->error AS $errorXml) {
 
                 $error = array();
                 $error['attribute'] = (string)$errorXml->attributes()->attribute;
@@ -230,15 +241,15 @@ XML;
                 $errors[] = $error;
             }
             $paymentMethod['payment_method']['errors'] = $errors;
-	    }
-	    return $paymentMethod;
-    }    
+        }
+        return $paymentMethod;
+    }
 }
 
-	
+
 
 /*
-
+SAMPLE RESOPNSE:
 <transaction> 
   <amount type="integer">9405</amount> 
   <on_test_gateway type="boolean">true</on_test_gateway> 
